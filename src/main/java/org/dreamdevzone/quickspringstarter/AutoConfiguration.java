@@ -16,7 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class AutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, QuickSecurityProperties properties) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**").permitAll()
