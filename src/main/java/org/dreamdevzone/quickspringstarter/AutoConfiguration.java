@@ -11,12 +11,14 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
+@org.springframework.boot.autoconfigure.AutoConfiguration
 @EnableConfigurationProperties(QuickSecurityProperties.class)
 public class AutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**").permitAll()
@@ -30,10 +32,10 @@ public class AutoConfiguration {
     @ConditionalOnMissingBean
     public JwtDecoder jwtDecoder(QuickSecurityProperties properties) {
         String secret = properties.getJwtSecret();
-        if(secret == null ||  secret.isBlank()) {
-            secret = java.util.UUID.randomUUID().toString();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("Property 'quick.security.jwt-secret' must be configured in application.properties");
         }
-        SecretKey spec = new SecretKeySpec(secret.getBytes(), "HmacSHA256");
+        SecretKey spec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(spec).build();
     }
 }
