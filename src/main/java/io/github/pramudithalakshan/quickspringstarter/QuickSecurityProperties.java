@@ -1,4 +1,4 @@
-package org.dreamdevzone.quickspringstarter;
+package io.github.pramudithalakshan.quickspringstarter;
 
 import lombok.Getter;
 import lombok.Setter;

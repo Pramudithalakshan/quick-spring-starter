@@ -9,7 +9,7 @@
         <version>4.0.5</version> <relativePath/>
     </parent>
 
-    <groupId>org.dreamdevzone</groupId>
+    <groupId>io.github.pramudithalakshan</groupId>
     <artifactId>quick-spring-starter</artifactId>
     <version>1.0.0</version>
 

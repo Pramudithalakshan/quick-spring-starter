@@ -1,4 +1,4 @@
-package org.dreamdevzone.quickspringstarter;
+package io.github.pramudithalakshan.quickspringstarter;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
