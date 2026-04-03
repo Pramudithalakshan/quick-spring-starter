@@ -1,8 +1,23 @@
-# quick-spring-starter
+# Quick Spring Starter
 
-Spring Boot starter that auto-configures a basic security setup and JWT decoder.
+Quick Spring Starter provides opinionated Spring Security auto-configuration for JWT-based resource servers.
 
-## Add the dependency
+## What it does
+
+- Registers a default `SecurityFilterChain`.
+- Allows unauthenticated access to `/public/**`.
+- Requires authentication for all other endpoints.
+- Registers a `JwtDecoder` using a shared secret.
+- Backs off automatically if your application already defines `SecurityFilterChain` or `JwtDecoder` beans.
+
+## Requirements
+
+- Java 21+
+- Spring Boot application
+
+## Installation
+
+Add this dependency to your application:
 
 ```xml
 <dependency>
@@ -14,7 +29,7 @@ Spring Boot starter that auto-configures a basic security setup and JWT decoder.
 
 ## Required configuration
 
-You must provide a stable JWT secret in the consuming application:
+Set a non-empty JWT secret in your application configuration:
 
 ```yaml
 quick:
@@ -22,10 +37,18 @@ quick:
     jwt-secret: your-signing-secret
 ```
 
-If `quick.security.jwt-secret` is missing, the application will fail fast during startup.
+If `quick.security.jwt-secret` is missing or blank, startup fails with an error.
 
-## Behavior
+## Default security behavior
 
-- Requests under `/public/**` are allowed without authentication.
-- All other endpoints require authentication.
-- A `JwtDecoder` bean is created from `quick.security.jwt-secret` unless the consuming app already defines one.
+- `/public/**`: permitted without authentication
+- Any other path: authentication required
+
+## Customization
+
+If you need custom behavior, define your own beans in the consuming app:
+
+- Custom `SecurityFilterChain` to change authorization rules
+- Custom `JwtDecoder` to use a different JWT validation strategy
+
+When these beans are present, the starter default beans are not applied.
