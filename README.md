@@ -1,14 +1,14 @@
 # Quick Spring Starter
 
-Quick Spring Starter is a Spring Boot auto-configuration module that wires JWT-based API security with minimal setup.
+Quick Spring Starter is a Spring Boot auto-configuration library for JWT-protected APIs. It provides sensible security defaults while still allowing full override in your application.
 
-## What It Provides
+## Features
 
-- Auto-configured `SecurityFilterChain` (only when your app does not define one)
+- Auto-configured `SecurityFilterChain` (only if your app does not define one)
 - Auto-configured `JwtDecoder` using an HMAC secret (`HmacSHA256`)
 - Auto-configured `JwtAuthenticationConverter` with customizable authorities claim
-- Configurable public and protected endpoint patterns
-- Conflict handling and warning logs when an endpoint is configured as both public and protected
+- Public and protected endpoint pattern mapping from configuration
+- Conflict detection with warning logs when a path is both public and protected
 
 ## Requirements
 
@@ -17,7 +17,7 @@ Quick Spring Starter is a Spring Boot auto-configuration module that wires JWT-b
 
 ## Installation
 
-Add this dependency to your application:
+Add the dependency to your application:
 
 ```xml
 <dependency>
@@ -27,27 +27,18 @@ Add this dependency to your application:
 </dependency>
 ```
 
-## Configuration
+## Quick Start
 
-### Required properties
+1. Add the dependency.
+2. Configure public and protected paths.
+3. Provide a strong `quick.security.jwt-secret`.
 
-- `quick.security.jwt-secret`
-- `quick.path.public-path`
-- `quick.path.protected-path`
-
-If any required property is missing or empty, startup fails with validation errors.
-
-### Optional properties
-
-- `quick.security.role-claim-name` (default: `roles`)
-
-### YAML example
+Minimal YAML:
 
 ```yaml
 quick:
   security:
     jwt-secret: replace-with-a-strong-secret
-    role-claim-name: roles
   path:
     public-path:
       - /public/**
@@ -57,7 +48,18 @@ quick:
       /user/**: ROLE_USER
 ```
 
-### Properties example
+## Configuration Reference
+
+| Property | Required | Default | Description |
+| --- | --- | --- | --- |
+| `quick.security.jwt-secret` | Yes | - | HMAC secret used by JWT decoder (`HmacSHA256`). |
+| `quick.security.role-claim-name` | No | `roles` | JWT claim name that contains authorities/roles. |
+| `quick.path.public-path` | Yes | - | List of endpoint patterns that are exposed with `permitAll()`. |
+| `quick.path.protected-path` | Yes | - | Map of endpoint pattern to required authority. |
+
+If required properties are missing or empty, startup fails with validation errors.
+
+## Properties File Example
 
 ```properties
 quick.security.jwt-secret=replace-with-a-strong-secret
@@ -69,20 +71,20 @@ quick.path.protected-path[/admin/**]=ROLE_ADMIN
 quick.path.protected-path[/user/**]=ROLE_USER
 ```
 
-## Security Rules
+## Security Behavior
 
-- Every `quick.path.public-path` entry is configured as `permitAll()`
-- Every `quick.path.protected-path` entry is configured as `hasAuthority(...)`
-- Any remaining endpoint requires authentication (`anyRequest().authenticated()`)
-- If the same path appears in both lists, the public rule wins and a warning is logged
+- Every `quick.path.public-path` entry is configured as `permitAll()`.
+- Every `quick.path.protected-path` entry is configured as `hasAuthority(...)`.
+- Any unmatched endpoint requires authentication (`anyRequest().authenticated()`).
+- If a path appears in both public and protected settings, the public rule wins and a warning is logged.
 
 ## JWT Authority Mapping
 
-- The JWT decoder uses `quick.security.jwt-secret` with algorithm `HmacSHA256`
-- Authorities are read from claim `quick.security.role-claim-name`
-- No authority prefix is added, so JWT claim values must exactly match required authorities
+- Authorities are read from claim `quick.security.role-claim-name`.
+- No authority prefix is added by the starter.
+- Claim values must match configured authorities exactly (for example `ROLE_ADMIN`).
 
-Example JWT claim payload:
+Example JWT payload:
 
 ```json
 {
@@ -93,7 +95,7 @@ Example JWT claim payload:
 
 ## Auto-Configuration and Overrides
 
-This starter registers:
+The starter registers:
 
 - `SecurityFilterChain`
 - `JwtDecoder`
@@ -101,11 +103,11 @@ This starter registers:
 
 Back-off behavior:
 
-- If your app provides `SecurityFilterChain`, starter security chain is skipped
-- If your app provides `JwtDecoder`, starter decoder is skipped
-- If your app provides `JwtAuthenticationConverter`, starter converter is skipped
+- If your app provides `SecurityFilterChain`, starter security chain is skipped.
+- If your app provides `JwtDecoder`, starter decoder is skipped.
+- If your app provides `JwtAuthenticationConverter`, starter converter is skipped.
 
-This makes it easy to start quickly and still replace parts with custom security logic when needed.
+This lets you start quickly and selectively replace components as your security needs evolve.
 
 ## Project Information
 

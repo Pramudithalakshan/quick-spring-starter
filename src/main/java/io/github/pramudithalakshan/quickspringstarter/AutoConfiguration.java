@@ -28,6 +28,24 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class AutoConfiguration {
     @PostConstruct
+    public void validateConfiguration(QuickStarterProperties quickStarterProperties) {
+        boolean noPublic = quickStarterProperties.getPublicPath().isEmpty();
+        boolean noProtected = quickStarterProperties.getProtectedPath().isEmpty();
+
+        if (noPublic && noProtected) {
+            log.warn("🛑 QUICK STARTER NOTICE: No paths are defined!");
+            log.warn("Because your configuration is empty, the library is");
+            log.warn("protecting EVERYTHING by default (Deny-All).");
+            log.warn("");
+            log.warn("To allow access, please define paths in properties:");
+            log.warn("quick.path.public-path=/your-public-endpoint/**");
+        } else {
+            log.info("🛡️ Quick Starter Security: {} public and {} protected paths mapped.",
+                    quickStarterProperties.getPublicPath().size(),
+                    quickStarterProperties.getProtectedPath().size());
+        }
+    }
+    @PostConstruct
     private void welcomeMessage() {
         log.info("**********************************************************");
         log.info("🚀 Quick Spring Starter initialized successfully!");
@@ -35,6 +53,7 @@ public class AutoConfiguration {
         log.info("🔗 Documentation: https://github.com/Pramudithalakshan/quick-spring-starter.git");
         log.info("**********************************************************");
     }
+
     @Bean
     @ConditionalOnMissingBean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, QuickStarterProperties quickStarterProperties,
