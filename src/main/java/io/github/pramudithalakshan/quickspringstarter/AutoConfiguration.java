@@ -38,10 +38,10 @@ public class AutoConfiguration {
 
         if (noPublic && noProtected) {
             log.warn("QUICK STARTER NOTICE: No paths are defined!");
-            log.warn("Because your configuration is empty, the library is");
-            log.warn("protecting EVERYTHING by default (Deny-All).");
+            log.warn("Because your configuration is empty, all requests");
+            log.warn("require authentication by default.");
             log.warn("");
-            log.warn("To allow access, please define paths in properties:");
+            log.warn("To allow unauthenticated, please define paths in properties:");
             log.warn("quick.path.public-path=/your-public-endpoint/**");
         }
     }

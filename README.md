@@ -99,14 +99,11 @@ The starter contributes:
 - `SecurityFilterChain`
 - `JwtDecoder`
 - `JwtAuthenticationConverter`
-- `AntPathMatcher`
 
 Back-off behavior:
-
 - If your app defines `SecurityFilterChain`, starter chain configuration is skipped.
 - If your app defines `JwtDecoder`, starter decoder is skipped.
 - If your app defines `JwtAuthenticationConverter`, starter converter is skipped.
-- If your app defines `AntPathMatcher`, starter matcher bean is skipped.
 
 ## Expected Startup Outcomes
 
