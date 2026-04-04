@@ -14,8 +14,8 @@ import java.util.Map;
 @Setter
 @Validated
 public class QuickStarterProperties {
-    @NotEmpty(message = "Path 'quick.path.public-path' must be configured in application.properties")
+    @NotEmpty(message = "Path 'quick.path.public-path' must be configured in application properties")
     private List<String> publicPath;
-    @NotEmpty(message = "Path 'quick.path.protected-path' must be configured in application.properties")
+    @NotEmpty(message = "Path 'quick.path.protected-path' must be configured in application properties")
     private Map<String,String> protectedPath;
 }

@@ -1,23 +1,23 @@
 # Quick Spring Starter
 
-Quick Spring Starter is a Spring Boot auto-configuration module that sets up JWT-based API security with minimal boilerplate.
+Quick Spring Starter is a Spring Boot auto-configuration module that wires JWT-based API security with minimal setup.
 
-## Features
+## What It Provides
 
-- Auto-registers a `SecurityFilterChain` (when missing in the consumer app)
-- Auto-registers a `JwtDecoder` backed by an HMAC secret (when missing in the consumer app)
-- Supports configurable public and protected endpoint patterns
-- Supports configurable JWT roles claim name
-- Uses Spring Boot auto-configuration imports (`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`)
+- Auto-configured `SecurityFilterChain` (only when your app does not define one)
+- Auto-configured `JwtDecoder` using an HMAC secret (`HmacSHA256`)
+- Auto-configured `JwtAuthenticationConverter` with customizable authorities claim
+- Configurable public and protected endpoint patterns
+- Conflict handling and warning logs when an endpoint is configured as both public and protected
 
 ## Requirements
 
 - Java 21+
-- Spring Boot 4.x application
+- Spring Boot 4.x
 
 ## Installation
 
-Add the dependency in your consuming service:
+Add this dependency to your application:
 
 ```xml
 <dependency>
@@ -29,21 +29,19 @@ Add the dependency in your consuming service:
 
 ## Configuration
 
-The following properties are required by the starter:
+### Required properties
 
 - `quick.security.jwt-secret`
 - `quick.path.public-path`
 - `quick.path.protected-path`
 
-Optional property:
+If any required property is missing or empty, startup fails with validation errors.
+
+### Optional properties
 
 - `quick.security.role-claim-name` (default: `roles`)
 
-Example configuration:
-```properties
-quick.path.public-path=/api/**
-quick.path.protected-path[/api/**]=ROLE_ADMIN
-```
+### YAML example
 
 ```yaml
 quick:
@@ -59,31 +57,57 @@ quick:
       /user/**: ROLE_USER
 ```
 
-If required properties are missing or empty, application startup fails with validation errors.
+### Properties example
 
-## Security Behavior
+```properties
+quick.security.jwt-secret=replace-with-a-strong-secret
+quick.security.role-claim-name=roles
 
-- Every pattern in `quick.path.public-path` is configured as `permitAll()`
-- Every entry in `quick.path.protected-path` is configured as `hasAuthority(...)`
-- All other endpoints require authentication (`anyRequest().authenticated()`)
-- If a path is configured as both public and protected, the public rule wins and a warning is logged
+quick.path.public-path=/public/**, /actuator/health
 
-## JWT Notes
+quick.path.protected-path[/admin/**]=ROLE_ADMIN
+quick.path.protected-path[/user/**]=ROLE_USER
+```
 
-- `JwtDecoder` uses `HmacSHA256` with `quick.security.jwt-secret`
-- Authorities are read from the claim defined by `quick.security.role-claim-name`
-- No authority prefix is added (`""`), so your JWT claim values should match the expected authorities exactly
+## Security Rules
 
-## Override Behavior
+- Every `quick.path.public-path` entry is configured as `permitAll()`
+- Every `quick.path.protected-path` entry is configured as `hasAuthority(...)`
+- Any remaining endpoint requires authentication (`anyRequest().authenticated()`)
+- If the same path appears in both lists, the public rule wins and a warning is logged
 
-The starter backs off when your app defines these beans:
+## JWT Authority Mapping
+
+- The JWT decoder uses `quick.security.jwt-secret` with algorithm `HmacSHA256`
+- Authorities are read from claim `quick.security.role-claim-name`
+- No authority prefix is added, so JWT claim values must exactly match required authorities
+
+Example JWT claim payload:
+
+```json
+{
+  "sub": "user-123",
+  "roles": ["ROLE_USER", "ROLE_ADMIN"]
+}
+```
+
+## Auto-Configuration and Overrides
+
+This starter registers:
 
 - `SecurityFilterChain`
 - `JwtDecoder`
+- `JwtAuthenticationConverter`
 
-This allows easy opt-out for advanced custom security setups.
+Back-off behavior:
 
-## Project
+- If your app provides `SecurityFilterChain`, starter security chain is skipped
+- If your app provides `JwtDecoder`, starter decoder is skipped
+- If your app provides `JwtAuthenticationConverter`, starter converter is skipped
+
+This makes it easy to start quickly and still replace parts with custom security logic when needed.
+
+## Project Information
 
 - Group: `io.github.pramudithalakshan`
 - Artifact: `quick-spring-starter`

@@ -2,10 +2,11 @@ package io.github.pramudithalakshan.quickspringstarter;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -19,9 +20,12 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
 @org.springframework.boot.autoconfigure.AutoConfiguration
+@AutoConfigureAfter({
+        SecurityAutoConfiguration.class,
+        OAuth2ResourceServerAutoConfiguration.class
+})
 @EnableConfigurationProperties({QuickSecurityProperties.class, QuickStarterProperties.class})
 @Slf4j
-@AutoConfigureAfter
 public class AutoConfiguration {
     @PostConstruct
     private void welcomeMessage() {
@@ -34,7 +38,7 @@ public class AutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, QuickStarterProperties quickStarterProperties,
-                                                   QuickSecurityProperties quickSecurityProperties) {
+                                                   QuickSecurityProperties quickSecurityProperties, JwtAuthenticationConverter converter) {
         return http
                 .authorizeHttpRequests(auth ->{
                     quickStarterProperties.getPublicPath().forEach(path ->
@@ -49,17 +53,18 @@ public class AutoConfiguration {
                  auth.anyRequest().authenticated();
                 })
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter(quickSecurityProperties)))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(converter))
                 ).build();
     }
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(JwtDecoder.class)
     public JwtDecoder jwtDecoder(QuickSecurityProperties properties) {
         String secret = properties.getJwtSecret();
         SecretKey spec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(spec).build();
     }
     @Bean
+    @ConditionalOnMissingBean(JwtAuthenticationConverter.class)
     public JwtAuthenticationConverter jwtAuthenticationConverter(QuickSecurityProperties quickSecurityProperties) {
         JwtGrantedAuthoritiesConverter listConverter = new JwtGrantedAuthoritiesConverter();
         listConverter.setAuthoritiesClaimName(quickSecurityProperties.getRoleClaimName());
