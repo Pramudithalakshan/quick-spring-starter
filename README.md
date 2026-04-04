@@ -1,54 +1,91 @@
 # Quick Spring Starter
 
-Quick Spring Starter provides opinionated Spring Security auto-configuration for JWT-based resource servers.
+Quick Spring Starter is a Spring Boot auto-configuration module that sets up JWT-based API security with minimal boilerplate.
 
-## What it does
+## Features
 
-- Registers a default `SecurityFilterChain`.
-- Allows unauthenticated access to `/public/**`.
-- Requires authentication for all other endpoints.
-- Registers a `JwtDecoder` using a shared secret.
-- Backs off automatically if your application already defines `SecurityFilterChain` or `JwtDecoder` beans.
+- Auto-registers a `SecurityFilterChain` (when missing in the consumer app)
+- Auto-registers a `JwtDecoder` backed by an HMAC secret (when missing in the consumer app)
+- Supports configurable public and protected endpoint patterns
+- Supports configurable JWT roles claim name
+- Uses Spring Boot auto-configuration imports (`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`)
 
 ## Requirements
 
 - Java 21+
-- Spring Boot application
+- Spring Boot 4.x application
 
 ## Installation
 
-Add this dependency to your application:
+Add the dependency in your consuming service:
 
 ```xml
 <dependency>
   <groupId>io.github.pramudithalakshan</groupId>
   <artifactId>quick-spring-starter</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 
-## Required configuration
+## Configuration
 
-Set a non-empty JWT secret in your application configuration:
+The following properties are required by the starter:
+
+- `quick.security.jwt-secret`
+- `quick.path.public-path`
+- `quick.path.protected-path`
+
+Optional property:
+
+- `quick.security.role-claim-name` (default: `roles`)
+
+Example configuration:
+```properties
+quick.path.public-path=/api/**
+quick.path.protected-path[/api/**]=ROLE_ADMIN
+```
 
 ```yaml
 quick:
   security:
-    jwt-secret: your-signing-secret
+    jwt-secret: replace-with-a-strong-secret
+    role-claim-name: roles
+  path:
+    public-path:
+      - /public/**
+      - /actuator/health
+    protected-path:
+      /admin/**: ROLE_ADMIN
+      /user/**: ROLE_USER
 ```
 
-If `quick.security.jwt-secret` is missing or blank, startup fails with an error.
+If required properties are missing or empty, application startup fails with validation errors.
 
-## Default security behavior
+## Security Behavior
 
-- `/public/**`: permitted without authentication
-- Any other path: authentication required
+- Every pattern in `quick.path.public-path` is configured as `permitAll()`
+- Every entry in `quick.path.protected-path` is configured as `hasAuthority(...)`
+- All other endpoints require authentication (`anyRequest().authenticated()`)
+- If a path is configured as both public and protected, the public rule wins and a warning is logged
 
-## Customization
+## JWT Notes
 
-If you need custom behavior, define your own beans in the consuming app:
+- `JwtDecoder` uses `HmacSHA256` with `quick.security.jwt-secret`
+- Authorities are read from the claim defined by `quick.security.role-claim-name`
+- No authority prefix is added (`""`), so your JWT claim values should match the expected authorities exactly
 
-- Custom `SecurityFilterChain` to change authorization rules
-- Custom `JwtDecoder` to use a different JWT validation strategy
+## Override Behavior
 
-When these beans are present, the starter default beans are not applied.
+The starter backs off when your app defines these beans:
+
+- `SecurityFilterChain`
+- `JwtDecoder`
+
+This allows easy opt-out for advanced custom security setups.
+
+## Project
+
+- Group: `io.github.pramudithalakshan`
+- Artifact: `quick-spring-starter`
+- Source: https://github.com/Pramudithalakshan/quick-spring-starter
+- License: Apache License 2.0
