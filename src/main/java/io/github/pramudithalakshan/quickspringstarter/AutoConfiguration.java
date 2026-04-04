@@ -1,6 +1,7 @@
 package io.github.pramudithalakshan.quickspringstarter;
 
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -14,6 +15,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -26,45 +29,44 @@ import java.nio.charset.StandardCharsets;
 })
 @EnableConfigurationProperties({QuickSecurityProperties.class, QuickStarterProperties.class})
 @Slf4j
+@RequiredArgsConstructor
 public class AutoConfiguration {
+    private final QuickStarterProperties quickStarterProperties;
     @PostConstruct
-    public void validateConfiguration(QuickStarterProperties quickStarterProperties) {
-        boolean noPublic = quickStarterProperties.getPublicPath().isEmpty();
-        boolean noProtected = quickStarterProperties.getProtectedPath().isEmpty();
+    public void validateConfiguration() {
+        boolean noPublic = this.quickStarterProperties.getPublicPath().isEmpty();
+        boolean noProtected = this.quickStarterProperties.getProtectedPath().isEmpty();
 
         if (noPublic && noProtected) {
-            log.warn("🛑 QUICK STARTER NOTICE: No paths are defined!");
+            log.warn("QUICK STARTER NOTICE: No paths are defined!");
             log.warn("Because your configuration is empty, the library is");
             log.warn("protecting EVERYTHING by default (Deny-All).");
             log.warn("");
             log.warn("To allow access, please define paths in properties:");
             log.warn("quick.path.public-path=/your-public-endpoint/**");
-        } else {
-            log.info("🛡️ Quick Starter Security: {} public and {} protected paths mapped.",
-                    quickStarterProperties.getPublicPath().size(),
-                    quickStarterProperties.getProtectedPath().size());
         }
     }
     @PostConstruct
     private void welcomeMessage() {
         log.info("**********************************************************");
-        log.info("🚀 Quick Spring Starter initialized successfully!");
-        log.info("🛡️ Security Module: Enabled");
-        log.info("🔗 Documentation: https://github.com/Pramudithalakshan/quick-spring-starter.git");
+        log.info("Quick Spring Starter initialized successfully!");
+        log.info("Security Module: Enabled");
+        log.info("Documentation: https://github.com/Pramudithalakshan/quick-spring-starter.git");
         log.info("**********************************************************");
     }
-
     @Bean
     @ConditionalOnMissingBean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, QuickStarterProperties quickStarterProperties,
-                                                   JwtAuthenticationConverter converter) {
+                                                   JwtAuthenticationConverter converter, PathMatcher pathMatcher) throws Exception{
         return http
                 .authorizeHttpRequests(auth ->{
                     quickStarterProperties.getPublicPath().forEach(path ->
                             auth.requestMatchers(path).permitAll());
                     quickStarterProperties.getProtectedPath().forEach((path, authority) -> {
-                        if (quickStarterProperties.getPublicPath().contains(path)) {
-                            log.warn("Security Conflict: {} is defined in both public and protected lists. Defaulting to PUBLIC.", path);
+                        boolean isConflict = quickStarterProperties.getPublicPath().stream()
+                                .anyMatch(publicPath -> pathMatcher.match(publicPath, path));
+                        if (isConflict) {
+                            log.warn("Security Conflict: Protected path '{}' is covered by a Public pattern. It will be PUBLIC.", path);
                         } else {
                             auth.requestMatchers(path).hasAuthority(authority);
                         }

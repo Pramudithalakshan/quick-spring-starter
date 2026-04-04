@@ -1,14 +1,14 @@
 # Quick Spring Starter
 
-Quick Spring Starter is a Spring Boot auto-configuration library for JWT-protected APIs. It provides sensible security defaults while still allowing full override in your application.
+Quick Spring Starter is a Spring Boot auto-configuration library for JWT-protected APIs. It provides a preconfigured OAuth2 Resource Server setup with path-based authorization, while still allowing full override from your application.
 
 ## Features
 
-- Auto-configured `SecurityFilterChain` (only if your app does not define one)
+- Auto-configured `SecurityFilterChain` (when your app does not define one)
 - Auto-configured `JwtDecoder` using an HMAC secret (`HmacSHA256`)
-- Auto-configured `JwtAuthenticationConverter` with customizable authorities claim
-- Public and protected endpoint pattern mapping from configuration
-- Conflict detection with warning logs when a path is both public and protected
+- Auto-configured `JwtAuthenticationConverter` with configurable claim name
+- Public and protected endpoint rules from external configuration
+- Conflict warning logs when the same endpoint is effectively both public and protected
 
 ## Requirements
 
@@ -30,15 +30,16 @@ Add the dependency to your application:
 ## Quick Start
 
 1. Add the dependency.
-2. Configure public and protected paths.
-3. Provide a strong `quick.security.jwt-secret`.
+2. Set `quick.security.jwt-secret`.
+3. Configure both `quick.path.public-path` and `quick.path.protected-path`.
 
-Minimal YAML:
+Minimal `application.yml`:
 
 ```yaml
 quick:
   security:
     jwt-secret: replace-with-a-strong-secret
+    role-claim-name: roles
   path:
     public-path:
       - /public/**
@@ -48,46 +49,39 @@ quick:
       /user/**: ROLE_USER
 ```
 
-## Configuration Reference
-
-| Property | Required | Default | Description |
-| --- | --- | --- | --- |
-| `quick.security.jwt-secret` | Yes | - | HMAC secret used by JWT decoder (`HmacSHA256`). |
-| `quick.security.role-claim-name` | No | `roles` | JWT claim name that contains authorities/roles. |
-| `quick.path.public-path` | Recommended | - | List of endpoint patterns that are exposed with `permitAll()`. |
-| `quick.path.protected-path` | Recommended | - | Map of endpoint pattern to required authority. |
-
-Notes:
-
-- `quick.security.jwt-secret` is validated as required.
-- Path properties are not bean-validated, but they are used during startup. Configure both path properties explicitly to avoid startup errors.
-- If both path collections are defined and empty, the starter warns and defaults to authentication for all endpoints.
-
-## Properties File Example
+Equivalent `application.properties`:
 
 ```properties
 quick.security.jwt-secret=replace-with-a-strong-secret
 quick.security.role-claim-name=roles
 
-quick.path.public-path=/public/**, /actuator/health
-
+quick.path.public-path=/public/**,/actuator/health
 quick.path.protected-path[/admin/**]=ROLE_ADMIN
 quick.path.protected-path[/user/**]=ROLE_USER
 ```
 
+## Configuration Reference
+
+| Property | Required | Default | Description |
+| --- |----------| --- | --- |
+| `quick.security.jwt-secret` | Yes      | - | Secret used for HMAC JWT verification (`HmacSHA256`). |
+| `quick.security.role-claim-name` | No       | `roles` | JWT claim name used to extract authorities. |
+| `quick.path.public-path` | No       | - | List of request matchers configured as `permitAll()`. |
+| `quick.path.protected-path` | No       | - | Map of request matcher pattern to required authority. |
+
 ## Security Behavior
 
-- Every `quick.path.public-path` entry is configured as `permitAll()`.
-- Every `quick.path.protected-path` entry is configured as `hasAuthority(...)`.
-- Any unmatched endpoint requires authentication (`anyRequest().authenticated()`).
-- If a path appears in both public and protected settings, the public rule wins and a warning is logged.
-- If no allow rules are configured, effective behavior is deny-by-default for anonymous users.
+- Each `quick.path.public-path` pattern is configured with `permitAll()`.
+- Each `quick.path.protected-path` entry is configured with `hasAuthority(...)`.
+- All other requests require authentication (`anyRequest().authenticated()`).
+- If a protected pattern is covered by a public pattern, the public rule is applied and a warning is logged.
+- If both path collections are present but empty, the starter logs a warning and still applies `anyRequest().authenticated()`.
 
 ## JWT Authority Mapping
 
-- Authorities are read from claim `quick.security.role-claim-name`.
-- No authority prefix is added by the starter.
-- Claim values must match configured authorities exactly (for example `ROLE_ADMIN`).
+- Authorities are read from `quick.security.role-claim-name`.
+- The starter uses no authority prefix.
+- Token claim values must exactly match configured authorities (for example `ROLE_ADMIN`).
 
 Example JWT payload:
 
@@ -98,21 +92,36 @@ Example JWT payload:
 }
 ```
 
-## Auto-Configuration and Overrides
+## Auto-Configuration and Override Behavior
 
-The starter registers:
+The starter contributes:
 
 - `SecurityFilterChain`
 - `JwtDecoder`
 - `JwtAuthenticationConverter`
+- `AntPathMatcher`
 
 Back-off behavior:
 
-- If your app provides `SecurityFilterChain`, starter security chain is skipped.
-- If your app provides `JwtDecoder`, starter decoder is skipped.
-- If your app provides `JwtAuthenticationConverter`, starter converter is skipped.
+- If your app defines `SecurityFilterChain`, starter chain configuration is skipped.
+- If your app defines `JwtDecoder`, starter decoder is skipped.
+- If your app defines `JwtAuthenticationConverter`, starter converter is skipped.
+- If your app defines `AntPathMatcher`, starter matcher bean is skipped.
 
-This lets you start quickly and selectively replace components as your security needs evolve.
+## Expected Startup Outcomes
+
+- If `quick.security.jwt-secret` is missing, startup fails fast due to validation.
+- If both path collections are configured and empty, startup succeeds and all routes still require authentication.
+- If path collections are omitted entirely, property binding can produce null collections and fail during initialization.
+
+## Troubleshooting
+
+- Startup fails with missing secret:
+  Configure `quick.security.jwt-secret`.
+- Startup fails with null path collections:
+  Ensure both `quick.path.public-path` and `quick.path.protected-path` are present in configuration (they may be empty, but should be defined).
+- Endpoint unexpectedly public:
+  Check for overlap where a public ant-style pattern covers a protected path.
 
 ## Project Information
 
