@@ -54,10 +54,14 @@ quick:
 | --- | --- | --- | --- |
 | `quick.security.jwt-secret` | Yes | - | HMAC secret used by JWT decoder (`HmacSHA256`). |
 | `quick.security.role-claim-name` | No | `roles` | JWT claim name that contains authorities/roles. |
-| `quick.path.public-path` | Yes | - | List of endpoint patterns that are exposed with `permitAll()`. |
-| `quick.path.protected-path` | Yes | - | Map of endpoint pattern to required authority. |
+| `quick.path.public-path` | Recommended | - | List of endpoint patterns that are exposed with `permitAll()`. |
+| `quick.path.protected-path` | Recommended | - | Map of endpoint pattern to required authority. |
 
-If required properties are missing or empty, startup fails with validation errors.
+Notes:
+
+- `quick.security.jwt-secret` is validated as required.
+- Path properties are not bean-validated, but they are used during startup. Configure both path properties explicitly to avoid startup errors.
+- If both path collections are defined and empty, the starter warns and defaults to authentication for all endpoints.
 
 ## Properties File Example
 
@@ -77,6 +81,7 @@ quick.path.protected-path[/user/**]=ROLE_USER
 - Every `quick.path.protected-path` entry is configured as `hasAuthority(...)`.
 - Any unmatched endpoint requires authentication (`anyRequest().authenticated()`).
 - If a path appears in both public and protected settings, the public rule wins and a warning is logged.
+- If no allow rules are configured, effective behavior is deny-by-default for anonymous users.
 
 ## JWT Authority Mapping
 
