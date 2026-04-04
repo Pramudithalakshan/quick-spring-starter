@@ -57,7 +57,7 @@ public class AutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, QuickStarterProperties quickStarterProperties,
-                                                   QuickSecurityProperties quickSecurityProperties, JwtAuthenticationConverter converter) {
+                                                   JwtAuthenticationConverter converter) {
         return http
                 .authorizeHttpRequests(auth ->{
                     quickStarterProperties.getPublicPath().forEach(path ->
