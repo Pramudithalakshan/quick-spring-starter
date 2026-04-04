@@ -2,6 +2,8 @@
 
 Quick Spring Starter is a Spring Boot auto-configuration library for JWT-protected APIs. It provides a preconfigured OAuth2 Resource Server setup with path-based authorization, while still allowing full override from your application.
 
+Note: Version 1.1.0 was published accidentally and contains configuration bugs. Please use v1.1.1 or higher.
+
 ## Features
 
 - Auto-configured `SecurityFilterChain` (when your app does not define one)
