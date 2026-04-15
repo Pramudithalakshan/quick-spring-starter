@@ -93,4 +93,9 @@ public class AutoConfiguration {
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(listConverter);
         return jwtAuthenticationConverter;
     }
+    @Bean
+    @ConditionalOnMissingBean
+    public JwtService jwtService(QuickSecurityProperties quickSecurityProperties) {
+        return new JwtService(quickSecurityProperties);
+    }
 }

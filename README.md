@@ -4,11 +4,19 @@ Quick Spring Starter is a Spring Boot auto-configuration library for JWT-protect
 
 Note: Version 1.1.0 was published accidentally and contains configuration bugs. Please use v1.1.1 or higher.
 
+## What's New in v1.2.0
+
+- Added built-in `JwtService` for generating HS256 JWT tokens in your application code
+- Improved default path property handling with safe empty collections
+- Improved startup guidance with clearer logs when path rules are not configured
+- Kept full Spring Boot back-off behavior so application-defined beans still take priority
+
 ## Features
 
 - Auto-configured `SecurityFilterChain` (when your app does not define one)
 - Auto-configured `JwtDecoder` using an HMAC secret (`HmacSHA256`)
 - Auto-configured `JwtAuthenticationConverter` with configurable claim name
+- Auto-configured `JwtService` bean for creating signed JWT tokens
 - Public and protected endpoint rules from external configuration
 - Conflict warning logs when the same endpoint is effectively both public and protected
 
@@ -25,7 +33,7 @@ Add the dependency to your application:
 <dependency>
   <groupId>io.github.pramudithalakshan</groupId>
   <artifactId>quick-spring-starter</artifactId>
-  <version>1.1.0</version>
+  <version>1.2.0</version>
 </dependency>
 ```
 
@@ -101,24 +109,52 @@ The starter contributes:
 - `SecurityFilterChain`
 - `JwtDecoder`
 - `JwtAuthenticationConverter`
+- `JwtService`
 
 Back-off behavior:
 - If your app defines `SecurityFilterChain`, starter chain configuration is skipped.
 - If your app defines `JwtDecoder`, starter decoder is skipped.
 - If your app defines `JwtAuthenticationConverter`, starter converter is skipped.
+- If your app defines `JwtService`, starter token service is skipped.
+
+## JwtService Usage
+
+You can inject `JwtService` to generate signed tokens using your configured `quick.security.jwt-secret`.
+
+```java
+import io.github.pramudithalakshan.quickspringstarter.JwtService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+class TokenController {
+  private final JwtService jwtService;
+
+  TokenController(JwtService jwtService) {
+    this.jwtService = jwtService;
+  }
+
+  @GetMapping("/token")
+  String token() throws Exception {
+    return jwtService.generateToken("user-123", List.of("ROLE_USER"));
+  }
+}
+```
 
 ## Expected Startup Outcomes
 
 - If `quick.security.jwt-secret` is missing, startup fails fast due to validation.
 - If both path collections are configured and empty, startup succeeds and all routes still require authentication.
-- If path collections are omitted entirely, property binding can produce null collections and fail during initialization.
+- If path collections are omitted entirely, starter defaults to empty collections and still secures all routes by default.
 
 ## Troubleshooting
 
 - Startup fails with missing secret:
   Configure `quick.security.jwt-secret`.
 - Startup fails with null path collections:
-  Ensure both `quick.path.public-path` and `quick.path.protected-path` are present in configuration (they may be empty, but should be defined).
+  Not expected in v1.2.0. Path properties default to empty collections.
 - Endpoint unexpectedly public:
   Check for overlap where a public ant-style pattern covers a protected path.
 
