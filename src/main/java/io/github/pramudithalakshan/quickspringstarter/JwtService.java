@@ -20,6 +20,7 @@ import java.util.List;
 public class JwtService {
     public final QuickSecurityProperties properties;
     public String generateToken(String username, List<String> roles) throws JOSEException {
+    // Build a short-lived HS256 token using the configured secret and role claim name.
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(username)
                 .issuer("quick-spring-starter")

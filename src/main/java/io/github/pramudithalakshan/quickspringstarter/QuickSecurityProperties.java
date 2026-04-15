@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @Getter
 @Setter
 @Validated
+// The JWT secret is required; the claim name stays configurable for different token formats.
 public class QuickSecurityProperties {
     @NotBlank(message = "message = \"Property 'quick.security.jwt-secret' must be configured in application configuration\"")
     private String jwtSecret;

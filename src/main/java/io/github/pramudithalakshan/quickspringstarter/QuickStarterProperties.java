@@ -12,6 +12,7 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "quick.path")
 @Getter
 @Setter
+// Default to empty collections so the starter never exposes null path rules.
 public class QuickStarterProperties {
     private List<String> publicPath = new ArrayList<>();
     private Map<String,String> protectedPath = new HashMap<>();
