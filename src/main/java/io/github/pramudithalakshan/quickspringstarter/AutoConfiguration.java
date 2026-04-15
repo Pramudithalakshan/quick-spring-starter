@@ -29,10 +29,12 @@ import java.nio.charset.StandardCharsets;
 @EnableConfigurationProperties({QuickSecurityProperties.class, QuickStarterProperties.class})
 @Slf4j
 @RequiredArgsConstructor
+// Central auto-configuration for starter-managed security beans and defaults.
 public class AutoConfiguration {
     private final QuickStarterProperties quickStarterProperties;
     @PostConstruct
     public void validateConfiguration() {
+    // When both collections are empty, the starter still protects everything by default.
         boolean noPublic = this.quickStarterProperties.getPublicPath().isEmpty();
         boolean noProtected = this.quickStarterProperties.getProtectedPath().isEmpty();
 
@@ -59,8 +61,10 @@ public class AutoConfiguration {
                                                    JwtAuthenticationConverter converter, PathMatcher pathMatcher) {
         return http
                 .authorizeHttpRequests(auth ->{
+                // Public rules are registered first so they can short-circuit later protected checks.
                     quickStarterProperties.getPublicPath().forEach(path ->
                             auth.requestMatchers(path).permitAll());
+                // Protected rules fall back to authorities unless a public pattern already covers them.
                     quickStarterProperties.getProtectedPath().forEach((path, authority) -> {
                         boolean isConflict = quickStarterProperties.getPublicPath().stream()
                                 .anyMatch(publicPath -> pathMatcher.match(publicPath, path));
@@ -79,6 +83,7 @@ public class AutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(JwtDecoder.class)
     public JwtDecoder jwtDecoder(QuickSecurityProperties properties) {
+        // Nimbus expects a raw HMAC key; the configured secret is converted directly to bytes.
         String secret = properties.getJwtSecret();
         SecretKey spec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(spec).build();
@@ -86,6 +91,7 @@ public class AutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(JwtAuthenticationConverter.class)
     public JwtAuthenticationConverter jwtAuthenticationConverter(QuickSecurityProperties quickSecurityProperties) {
+        // Map the configured claim to Spring Security authorities without adding a prefix.
         JwtGrantedAuthoritiesConverter listConverter = new JwtGrantedAuthoritiesConverter();
         listConverter.setAuthoritiesClaimName(quickSecurityProperties.getRoleClaimName());
         listConverter.setAuthorityPrefix("");
